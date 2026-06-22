@@ -124,9 +124,39 @@ export function loadAppScripts() {
   runInBrowserScope(code);
 }
 
+export function stubApiLayer() {
+  globalThis.MedApi = {
+    BASE: "http://localhost:5000",
+    getToken: () => "",
+    health: async () => ({ status: "ok" }),
+    login: async () => ({ token: "t", user: {} }),
+    register: async () => ({ token: "t", user: {} }),
+    me: async () => ({ user: {} }),
+  };
+  const noop = async () => {};
+  globalThis.MedSync = {
+    useApi: () => false,
+    run: async (fn) => { if (fn) await fn(); },
+    pullAll: async () => false,
+    savePatient: noop,
+    deletePatient: noop,
+    patchPatient: noop,
+    savePrescription: noop,
+    deletePrescription: noop,
+    syncReminders: noop,
+    saveMedicalRecord: noop,
+    deleteMedicalRecord: noop,
+    addHistory: noop,
+    pushNotification: noop,
+    markNotifRead: noop,
+    deleteNotification: noop,
+  };
+}
+
 export function initBundleForTests() {
   localStorage.clear();
   mountBundleDom();
+  stubApiLayer();
   loadAppScripts();
 
   const { MedCare, MedStore } = globalThis;
