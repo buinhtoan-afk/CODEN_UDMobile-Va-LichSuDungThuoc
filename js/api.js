@@ -2,13 +2,28 @@
  * MedCare — REST API client (backend SQL Server)
  */
 const MedApi = (function () {
-  const BASE = (function () {
+  const DEFAULT_LOCAL = "http://localhost:5000";
+  const FETCH_TIMEOUT_MS = 4000;
+
+  function resolveBase() {
     try {
-      return localStorage.getItem("medcare_api_base") || "http://localhost:5000";
-    } catch (_) {
-      return "http://localhost:5000";
-    }
-  })();
+      const stored = localStorage.getItem("medcare_api_base");
+      if (stored && stored.trim()) return stored.trim();
+    } catch (_) {}
+    if (typeof location === "undefined") return DEFAULT_LOCAL;
+    const host = location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return DEFAULT_LOCAL;
+    // Trang public (Render, GitHub Pages...) — offline/localStorage trừ khi cấu hình API URL
+    return "";
+  }
+
+  const BASE = resolveBase();
+
+  function networkError() {
+    const err = new Error("Không kết nối được API. Hãy chạy backend: cd backend && npm start");
+    err.code = "NETWORK";
+    return err;
+  }
 
   function getToken() {
     try {
@@ -20,9 +35,10 @@ const MedApi = (function () {
 
   async function request(path, options = {}) {
     if (typeof window !== "undefined" && window.__MEDCARE_E2E__) {
-      const err = new Error("Không kết nối được API. Hãy chạy backend: cd backend && npm start");
-      err.code = "NETWORK";
-      throw err;
+      throw networkError();
+    }
+    if (!BASE) {
+      throw networkError();
     }
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
     if (!options.noAuth) {
@@ -30,17 +46,20 @@ const MedApi = (function () {
       if (token) headers.Authorization = "Bearer " + token;
     }
 
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
     let res;
     try {
       res = await fetch(BASE + path, {
         method: options.method || "GET",
         headers,
         body: options.body,
+        signal: ctrl.signal,
       });
     } catch (_) {
-      const err = new Error("Không kết nối được API. Hãy chạy backend: cd backend && npm start");
-      err.code = "NETWORK";
-      throw err;
+      throw networkError();
+    } finally {
+      clearTimeout(timer);
     }
 
     let json = {};
@@ -59,6 +78,7 @@ const MedApi = (function () {
 
   return {
     BASE,
+    resolveBase,
     getToken,
     health: () => request("/api/health", { noAuth: true }),
     login: (email, password) =>
