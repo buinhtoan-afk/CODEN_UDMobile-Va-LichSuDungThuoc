@@ -1303,13 +1303,19 @@
       }
 
       let _portalCache = null;
+      let _portalCacheAt = 0;
 
-      async function loadPortal() {
+      async function loadPortal(force) {
+        if (!force && _portalCache && Date.now() - _portalCacheAt < 15000) {
+          return _portalCache;
+        }
         try {
           _portalCache = await MedApi.getPortal();
+          _portalCacheAt = Date.now();
           return _portalCache;
         } catch (err) {
           _portalCache = { patient: null, prescriptions: [], scheduleToday: [], notifications: [], message: err.message };
+          _portalCacheAt = Date.now();
           return _portalCache;
         }
       }

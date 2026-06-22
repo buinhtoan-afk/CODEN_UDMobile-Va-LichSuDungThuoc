@@ -18,6 +18,7 @@ function mapPatient(row) {
     statusConfirmedBy: row.StatusConfirmedBy,
     statusConfirmedAt: row.StatusConfirmedAt,
     doctorId: row.DoctorId,
+    userId: row.UserId,
     lastVisit: row.LastVisit ? row.LastVisit.toISOString().slice(0, 10) : null,
     note: row.Note,
     avatar: row.Avatar,
@@ -80,8 +81,8 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     await query(`
-      INSERT INTO dbo.Patients (Id, Code, Name, Phone, Birth, Gender, Department, Status, StatusConfirmedBy, StatusConfirmedAt, LastVisit, Note, DoctorId)
-      VALUES (@id, @code, @name, @phone, @birth, @gender, @department, @status, @statusConfirmedBy, @statusConfirmedAt, @lastVisit, @note, @doctorId)
+      INSERT INTO dbo.Patients (Id, Code, Name, Phone, Birth, Gender, Department, Status, StatusConfirmedBy, StatusConfirmedAt, LastVisit, Note, DoctorId, UserId)
+      VALUES (@id, @code, @name, @phone, @birth, @gender, @department, @status, @statusConfirmedBy, @statusConfirmedAt, @lastVisit, @note, @doctorId, @userId)
     `, {
       id,
       code,
@@ -96,6 +97,7 @@ router.post("/", requireAuth, async (req, res) => {
       lastVisit: body.lastVisit || null,
       note: body.note || null,
       doctorId: body.doctorId || null,
+      userId: body.userId || null,
     });
 
     await query("INSERT INTO dbo.ActivityLog (Text) VALUES (@text)", {
@@ -121,6 +123,13 @@ router.put("/:id", requireAuth, async (req, res) => {
       await query("UPDATE dbo.Patients SET DoctorId = @doctorId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @id", {
         id: req.params.id,
         doctorId: body.doctorId,
+      });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "userId")) {
+      await query("UPDATE dbo.Patients SET UserId = @userId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @id", {
+        id: req.params.id,
+        userId: body.userId || null,
       });
     }
 

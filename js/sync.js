@@ -169,6 +169,7 @@ const MedSync = (function () {
       note: patient.note,
       statusConfirmedBy: patient.statusConfirmedBy,
       doctorId: patient.doctorId ?? null,
+      userId: patient.userId ?? null,
     };
     if (isNew) {
       const res = await MedApi.createPatient(body);
