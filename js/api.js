@@ -7,8 +7,14 @@ const MedApi = (function () {
 
   function resolveBase() {
     try {
+      if (typeof window !== "undefined" && window.MEDCARE_CONFIG?.apiBase) {
+        const cfg = String(window.MEDCARE_CONFIG.apiBase).trim().replace(/\/$/, "");
+        if (cfg) return cfg;
+      }
+    } catch (_) {}
+    try {
       const stored = localStorage.getItem("medcare_api_base");
-      if (stored && stored.trim()) return stored.trim();
+      if (stored && stored.trim()) return stored.trim().replace(/\/$/, "");
     } catch (_) {}
     if (typeof location === "undefined") return DEFAULT_LOCAL;
     const host = location.hostname;

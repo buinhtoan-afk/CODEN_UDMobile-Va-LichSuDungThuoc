@@ -1564,6 +1564,9 @@
               if (btn) btn.disabled = false;
               return;
             }
+            toast("Chưa kết nối API hoặc tài khoản không có offline. Cấu hình API URL hoặc dùng admin@demo.com / 123456.", "error");
+            if (btn) btn.disabled = false;
+            return;
           }
           toast(err.message || "Email hoặc mật khẩu không đúng", "error");
         } finally {
